@@ -1,0 +1,75 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- IMPORTANT: Replace these placeholder IDs with your actual Developer Product IDs.
+-- These should match the keys in the `currencyProducts` table in the `CurrencyPurchaseHandler` server script.
+local PRODUCT_ID_100_CASH = 0 -- Replace with your Product ID for 100 Cash
+local PRODUCT_ID_500_CASH = 0 -- Replace with your Product ID for 500 Cash
+-- Example:
+-- local PRODUCT_ID_100_CASH = 123456789
+-- local PRODUCT_ID_500_CASH = 987654321
+
+
+-- Function to initiate a purchase prompt for the player
+_G.PurchaseCurrency = function(productId) -- Using _G for easy access from other LocalScripts/UI, consider ModuleScript for better practice
+    if not LocalPlayer then
+        warn("InitiateCurrencyPurchase: LocalPlayer not available to make a purchase.")
+        return
+    end
+    
+    if not productId or productId == 0 then
+        warn("InitiateCurrencyPurchase: Invalid Product ID provided for purchase.")
+        return
+    end
+
+    print("InitiateCurrencyPurchase: Attempting to prompt purchase for product ID:", productId)
+    local success, message = pcall(function()
+        MarketplaceService:PromptProductPurchase(LocalPlayer, productId)
+    end)
+
+    if not success then
+        warn("InitiateCurrencyPurchase: Error prompting product purchase:", message)
+        -- Optionally, inform the player via UI that an error occurred
+    end
+end
+
+-- Example of how you would call this from a UI Button's LocalScript:
+-- Make sure the button's LocalScript can access this function.
+-- If this script is in StarterPlayerScripts, other LocalScripts (e.g., inside a ScreenGui)
+-- can call `_G.PurchaseCurrency(PRODUCT_ID_100_CASH)` or `_G.PurchaseCurrency(PRODUCT_ID_500_CASH)`.
+
+-- For example, in a LocalScript parented to a TextButton for buying 100 Cash:
+-- script.Parent.MouseButton1Click:Connect(function()
+--     if _G.PurchaseCurrency then
+--         _G.PurchaseCurrency(0) -- Replace 0 with PRODUCT_ID_100_CASH's actual value
+--     else
+--         warn("PurchaseCurrency function not found in _G")
+--     end
+-- end)
+
+
+-- Listen for the purchase prompt to finish for client-side feedback
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, assetId, isPurchased)
+    if LocalPlayer and userId == LocalPlayer.UserId then
+        if isPurchased then
+            print("InitiateCurrencyPurchase: Product purchase successful (client-side confirmation for product ID):", assetId)
+            -- You can show a "Thank you for your purchase!" UI message here.
+            -- The actual currency is granted by the server script's ProcessReceipt.
+        else
+            print("InitiateCurrencyPurchase: Product purchase failed or was cancelled by player (client-side confirmation for product ID):", assetId)
+            -- You can show a "Purchase cancelled or failed." UI message here.
+        end
+    end
+end)
+
+-- To make the product IDs accessible if needed by UI scripts directly:
+-- (Though calling _G.PurchaseCurrency with the ID is often cleaner)
+_G.CurrencyProductIDs = {
+    SmallPack = PRODUCT_ID_100_CASH,
+    LargePack = PRODUCT_ID_500_CASH,
+}
+
+print("InitiateCurrencyPurchase script loaded. Use _G.PurchaseCurrency(productId) to buy.")
+print("Available product IDs for testing (replace with real ones): _G.CurrencyProductIDs.SmallPack, _G.CurrencyProductIDs.LargePack")
+
