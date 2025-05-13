@@ -1,0 +1,582 @@
+-- UIHandler.lua
+-- Handles the game's UI elements
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create main UI
+local function CreateMainUI()
+	-- Create ScreenGui
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "PredsVsPreysUI"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = playerGui
+
+	-- Create round info frame
+	local roundInfoFrame = Instance.new("Frame")
+	roundInfoFrame.Name = "RoundInfo"
+	roundInfoFrame.Size = UDim2.new(0, 200, 0, 100)
+	roundInfoFrame.Position = UDim2.new(0, 10, 0, 10)
+	roundInfoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	roundInfoFrame.BackgroundTransparency = 0.5
+	roundInfoFrame.BorderSizePixel = 0
+	roundInfoFrame.Parent = screenGui
+
+	-- Add round timer
+	local timerLabel = Instance.new("TextLabel")
+	timerLabel.Name = "Timer"
+	timerLabel.Size = UDim2.new(1, 0, 0, 30)
+	timerLabel.Position = UDim2.new(0, 0, 0, 10)
+	timerLabel.BackgroundTransparency = 1
+	timerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	timerLabel.TextSize = 24
+	timerLabel.Font = Enum.Font.SourceSansBold
+	timerLabel.Text = "Time: 5:00"
+	timerLabel.Parent = roundInfoFrame
+
+	-- Add status label
+	local statusLabel = Instance.new("TextLabel")
+	statusLabel.Name = "Status"
+	statusLabel.Size = UDim2.new(1, 0, 0, 30)
+	statusLabel.Position = UDim2.new(0, 0, 0, 50)
+	statusLabel.BackgroundTransparency = 1
+	statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	statusLabel.TextSize = 18
+	statusLabel.Font = Enum.Font.SourceSans
+	statusLabel.Text = "Waiting for players"
+	statusLabel.Parent = roundInfoFrame
+
+	-- Create team indicator
+	local teamIndicator = Instance.new("Frame")
+	teamIndicator.Name = "TeamIndicator"
+	teamIndicator.Size = UDim2.new(0, 200, 0, 50)
+	teamIndicator.Position = UDim2.new(0, 10, 0, 120)
+	teamIndicator.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	teamIndicator.BackgroundTransparency = 0.5
+	teamIndicator.BorderSizePixel = 0
+	teamIndicator.Parent = screenGui
+
+	-- Add team icon
+	local teamIcon = Instance.new("Frame")
+	teamIcon.Name = "TeamIcon"
+	teamIcon.Size = UDim2.new(0, 30, 0, 30)
+	teamIcon.Position = UDim2.new(0, 10, 0, 10)
+	teamIcon.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+	teamIcon.BorderSizePixel = 0
+	teamIcon.Parent = teamIndicator
+
+	-- Add team name
+	local teamName = Instance.new("TextLabel")
+	teamName.Name = "TeamName"
+	teamName.Size = UDim2.new(0, 150, 0, 30)
+	teamName.Position = UDim2.new(0, 50, 0, 10)
+	teamName.BackgroundTransparency = 1
+	teamName.TextColor3 = Color3.fromRGB(255, 255, 255)
+	teamName.TextSize = 18
+	teamName.Font = Enum.Font.SourceSansBold
+	teamName.Text = "No Team"
+	teamName.TextXAlignment = Enum.TextXAlignment.Left
+	teamName.Parent = teamIndicator
+
+	-- Create ability cooldown indicator
+	local cooldownIndicator = Instance.new("Frame")
+	cooldownIndicator.Name = "CooldownIndicator"
+	cooldownIndicator.Size = UDim2.new(0, 200, 0, 50)
+	cooldownIndicator.Position = UDim2.new(0, 10, 0, 180)
+	cooldownIndicator.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	cooldownIndicator.BackgroundTransparency = 0.5
+	cooldownIndicator.BorderSizePixel = 0
+	cooldownIndicator.Parent = screenGui
+
+	-- Add cooldown bar
+	local cooldownBar = Instance.new("Frame")
+	cooldownBar.Name = "CooldownBar"
+	cooldownBar.Size = UDim2.new(1, -20, 0, 20)
+	cooldownBar.Position = UDim2.new(0, 10, 0, 15)
+	cooldownBar.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+	cooldownBar.BorderSizePixel = 0
+	cooldownBar.Parent = cooldownIndicator
+
+	-- Add cooldown fill
+	local cooldownFill = Instance.new("Frame")
+	cooldownFill.Name = "CooldownFill"
+	cooldownFill.Size = UDim2.new(1, 0, 1, 0)
+	cooldownFill.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+	cooldownFill.BorderSizePixel = 0
+	cooldownFill.Parent = cooldownBar
+
+	-- Create round end screen (initially hidden)
+	local roundEndScreen = Instance.new("Frame")
+	roundEndScreen.Name = "RoundEndScreen"
+	roundEndScreen.Size = UDim2.new(1, 0, 1, 0)
+	roundEndScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	roundEndScreen.BackgroundTransparency = 0.7
+	roundEndScreen.BorderSizePixel = 0
+	roundEndScreen.Visible = false
+	roundEndScreen.Parent = screenGui
+
+	-- Add round result text
+	local resultText = Instance.new("TextLabel")
+	resultText.Name = "ResultText"
+	resultText.Size = UDim2.new(0, 600, 0, 100)
+	resultText.Position = UDim2.new(0.5, -300, 0.4, -50)
+	resultText.BackgroundTransparency = 1
+	resultText.TextColor3 = Color3.fromRGB(255, 255, 255)
+	resultText.TextSize = 36
+	resultText.Font = Enum.Font.SourceSansBold
+	resultText.Text = "Round Over!"
+	resultText.Parent = roundEndScreen
+
+	-- Add next round text
+	local nextRoundText = Instance.new("TextLabel")
+	nextRoundText.Name = "NextRoundText"
+	nextRoundText.Size = UDim2.new(0, 600, 0, 50)
+	nextRoundText.Position = UDim2.new(0.5, -300, 0.6, -25)
+	nextRoundText.BackgroundTransparency = 1
+	nextRoundText.TextColor3 = Color3.fromRGB(200, 200, 200)
+	nextRoundText.TextSize = 24
+	nextRoundText.Font = Enum.Font.SourceSans
+	nextRoundText.Text = "Next round in 15 seconds..."
+	nextRoundText.Parent = roundEndScreen
+
+	-- Create debug info panel (initially hidden)
+	local debugPanel = Instance.new("Frame")
+	debugPanel.Name = "DebugPanel"
+	debugPanel.Size = UDim2.new(0, 300, 0, 200)
+	debugPanel.Position = UDim2.new(1, -310, 0, 10)
+	debugPanel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	debugPanel.BackgroundTransparency = 0.5
+	debugPanel.BorderSizePixel = 0
+	debugPanel.Visible = false
+	debugPanel.Parent = screenGui
+
+	-- Debug panel title
+	local debugTitle = Instance.new("TextLabel")
+	debugTitle.Name = "Title"
+	debugTitle.Size = UDim2.new(1, 0, 0, 30)
+	debugTitle.Position = UDim2.new(0, 0, 0, 0)
+	debugTitle.BackgroundTransparency = 0.7
+	debugTitle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	debugTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	debugTitle.TextSize = 18
+	debugTitle.Font = Enum.Font.SourceSansBold
+	debugTitle.Text = "Debug Info"
+	debugTitle.Parent = debugPanel
+
+	-- Team counts
+	local teamsInfo = Instance.new("TextLabel")
+	teamsInfo.Name = "TeamsInfo"
+	teamsInfo.Size = UDim2.new(1, -20, 0, 120)
+	teamsInfo.Position = UDim2.new(0, 10, 0, 40)
+	teamsInfo.BackgroundTransparency = 1
+	teamsInfo.TextColor3 = Color3.fromRGB(255, 255, 255)
+	teamsInfo.TextSize = 14
+	teamsInfo.Font = Enum.Font.SourceSans
+	teamsInfo.Text = "Loading team info..."
+	teamsInfo.TextXAlignment = Enum.TextXAlignment.Left
+	teamsInfo.TextYAlignment = Enum.TextYAlignment.Top
+	teamsInfo.Parent = debugPanel
+
+	-- Debug toggle button
+	local debugToggle = Instance.new("TextButton")
+	debugToggle.Name = "DebugToggle"
+	debugToggle.Size = UDim2.new(0, 20, 0, 20)
+	debugToggle.Position = UDim2.new(1, -25, 0, 5)
+	debugToggle.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+	debugToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	debugToggle.TextSize = 14
+	debugToggle.Font = Enum.Font.SourceSansBold
+	debugToggle.Text = "D"
+	debugToggle.Parent = screenGui
+
+	-- Toggle debug panel when button is clicked
+	debugToggle.MouseButton1Click:Connect(function()
+		debugPanel.Visible = not debugPanel.Visible
+		UpdateDebugInfo(screenGui)
+	end)
+
+	return screenGui
+end
+
+-- Update the team indicator
+local function UpdateTeamIndicator(ui)
+	local teamIcon = ui.TeamIndicator.TeamIcon
+	local teamName = ui.TeamIndicator.TeamName
+
+	if player.Team then
+		teamIcon.BackgroundColor3 = player.Team.TeamColor.Color
+		teamName.Text = player.Team.Name
+
+		-- Show different descriptions based on team
+		if player.Team.Name == "Apex" then
+			teamName.Text = "Apex - Hunt everyone!"
+		elseif player.Team.Name == "Predator" then
+			teamName.Text = "Predator - Hunt Prey!"  
+		elseif player.Team.Name == "Prey" then
+			teamName.Text = "Prey - Run and survive!"
+		elseif player.Team.Name == "Spectator" then
+			teamName.Text = "Spectator - Watching the hunt"
+		end
+	else
+		teamIcon.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+		teamName.Text = "No Team"
+	end
+end
+
+-- Format time as MM:SS
+local function FormatTime(seconds)
+	local minutes = math.floor(seconds / 60)
+	local remainingSeconds = seconds % 60
+	return string.format("%d:%02d", minutes, remainingSeconds)
+end
+
+-- Update cooldown display
+local function UpdateCooldown(ui, progress)
+	local cooldownFill = ui.CooldownIndicator.CooldownBar.CooldownFill
+
+	-- Create tween for smooth transition
+	local tween = TweenService:Create(
+		cooldownFill,
+		TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{Size = UDim2.new(progress, 0, 1, 0)}
+	)
+	tween:Play()
+
+	-- Update color based on availability
+	if progress >= 0.99 then
+		cooldownFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100) -- Green when ready
+	else
+		-- Gradient from red to yellow to green
+		local r = 255 * (1 - progress)
+		local g = 255 * progress
+		cooldownFill.BackgroundColor3 = Color3.fromRGB(r, g, 0)
+	end
+end
+
+-- Show elimination notification
+local function ShowEliminationNotification(ui, preyName, predatorName, predatorTeam)
+	-- Create notification frame
+	local notification = Instance.new("Frame")
+	notification.Name = "EliminationNotif"
+	notification.Size = UDim2.new(0, 300, 0, 50)
+	notification.Position = UDim2.new(0.5, -150, 0.8, 0)
+	notification.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	notification.BackgroundTransparency = 0.5
+	notification.BorderSizePixel = 0
+	notification.Parent = ui
+
+	-- Add text
+	local message = Instance.new("TextLabel")
+	message.Name = "Message"
+	message.Size = UDim2.new(1, 0, 1, 0)
+	message.BackgroundTransparency = 1
+	message.TextColor3 = Color3.fromRGB(255, 255, 255)
+	message.TextSize = 16
+	message.Font = Enum.Font.SourceSans
+
+	-- Set the message
+	local teamColor
+	if predatorTeam == "Apex" then
+		teamColor = "rgb(255, 0, 0)"
+	elseif predatorTeam == "Predator" then
+		teamColor = "rgb(0, 0, 255)"
+	else
+		teamColor = "rgb(255, 255, 255)"
+	end
+
+	message.Text = string.format("<font color=\"%s\">%s</font> eliminated %s!", teamColor, predatorName, preyName)
+	message.RichText = true
+	message.Parent = notification
+
+	-- Animate the notification
+	notification.Position = UDim2.new(0.5, -150, 0.9, 0)
+	TweenService:Create(
+		notification,
+		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{Position = UDim2.new(0.5, -150, 0.8, 0)}
+	):Play()
+
+	-- Remove after delay
+	spawn(function()
+		wait(3)
+		TweenService:Create(
+			notification,
+			TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{Position = UDim2.new(0.5, -150, 0.9, 0), BackgroundTransparency = 1}
+		):Play()
+		wait(0.5)
+		notification:Destroy()
+	end)
+end
+
+-- Show round end screen
+local function ShowRoundEndScreen(ui, survivingPrey)
+	local roundEndScreen = ui.RoundEndScreen
+	local resultText = roundEndScreen.ResultText
+
+	-- Set appropriate message
+	if survivingPrey > 0 then
+		if survivingPrey == 1 then
+			resultText.Text = "Round Over! 1 Prey survived!"
+		else
+			resultText.Text = "Round Over! " .. survivingPrey .. " Prey survived!"
+		end
+	else
+		resultText.Text = "Round Over! All Prey were eliminated!"
+	end
+
+	-- Show the screen
+	roundEndScreen.Visible = true
+	roundEndScreen.BackgroundTransparency = 1
+
+	-- Animate fade in
+	TweenService:Create(
+		roundEndScreen,
+		TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{BackgroundTransparency = 0.7}
+	):Play()
+end
+
+-- Hide round end screen
+local function HideRoundEndScreen(ui)
+	local roundEndScreen = ui.RoundEndScreen
+
+	-- Animate fade out
+	TweenService:Create(
+		roundEndScreen,
+		TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{BackgroundTransparency = 1}
+	):Play()
+
+	wait(1)
+	roundEndScreen.Visible = false
+end
+
+-- Show spectator notification
+local function ShowSpectatorNotification(ui)
+	-- Create notification frame
+	local notification = Instance.new("Frame")
+	notification.Name = "SpectatorNotif"
+	notification.Size = UDim2.new(0, 400, 0, 70)
+	notification.Position = UDim2.new(0.5, -200, 0.3, 0)
+	notification.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	notification.BackgroundTransparency = 0.3
+	notification.BorderSizePixel = 0
+	notification.Parent = ui
+
+	-- Add text
+	local message = Instance.new("TextLabel")
+	message.Name = "Message"
+	message.Size = UDim2.new(1, 0, 0.7, 0)
+	message.BackgroundTransparency = 1
+	message.TextColor3 = Color3.fromRGB(255, 255, 255)
+	message.TextSize = 22
+	message.Font = Enum.Font.SourceSansBold
+	message.Text = "You are now a Spectator"
+	message.Parent = notification
+
+	-- Add subtext
+	local subMessage = Instance.new("TextLabel")
+	subMessage.Name = "SubMessage"
+	subMessage.Size = UDim2.new(1, 0, 0.3, 0)
+	subMessage.Position = UDim2.new(0, 0, 0.7, 0)
+	subMessage.BackgroundTransparency = 1
+	subMessage.TextColor3 = Color3.fromRGB(200, 200, 200)
+	subMessage.TextSize = 16
+	subMessage.Font = Enum.Font.SourceSans
+	subMessage.Text = "You'll be assigned to a team in the next round"
+	subMessage.Parent = notification
+
+	-- Animate the notification
+	notification.Position = UDim2.new(0.5, -200, 0.2, 0)
+	notification.BackgroundTransparency = 1
+
+	for _, child in pairs(notification:GetChildren()) do
+		child.TextTransparency = 1
+	end
+
+	-- Fade in
+	TweenService:Create(
+		notification,
+		TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{Position = UDim2.new(0.5, -200, 0.3, 0), BackgroundTransparency = 0.3}
+	):Play()
+
+	for _, child in pairs(notification:GetChildren()) do
+		TweenService:Create(
+			child,
+			TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{TextTransparency = 0}
+		):Play()
+	end
+
+	-- Remove after delay
+	spawn(function()
+		wait(5)
+
+		-- Fade out
+		TweenService:Create(
+			notification,
+			TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{Position = UDim2.new(0.5, -200, 0.2, 0), BackgroundTransparency = 1}
+		):Play()
+
+		for _, child in pairs(notification:GetChildren()) do
+			TweenService:Create(
+				child,
+				TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{TextTransparency = 1}
+			):Play()
+		end
+
+		wait(1)
+		notification:Destroy()
+	end)
+end
+
+-- Update debug information
+local function UpdateDebugInfo(ui)
+	if not ui or not ui:FindFirstChild("DebugPanel") then return end
+
+	local debugPanel = ui.DebugPanel
+	if not debugPanel.Visible then return end
+
+	local teamsInfo = debugPanel:FindFirstChild("TeamsInfo")
+	if not teamsInfo then return end
+
+	-- Get team information
+	local teamCounts = {}
+	local teams = game:GetService("Teams"):GetChildren()
+
+	for _, team in pairs(teams) do
+		teamCounts[team.Name] = #team:GetPlayers()
+	end
+
+	-- Build debug text
+	local text = "Teams:\n"
+	for teamName, count in pairs(teamCounts) do
+		text = text .. "- " .. teamName .. ": " .. count .. " players\n"
+	end
+
+	text = text .. "\nTotal Players: " .. #game:GetService("Players"):GetPlayers()
+	text = text .. "\nGame Round Active: " .. tostring(ReplicatedStorage:FindFirstChild("GameEvents") and 
+		ReplicatedStorage.GameEvents:FindFirstChild("RoundStatus") and
+		ReplicatedStorage.GameEvents.RoundStatus.Value or "Unknown")
+
+	teamsInfo.Text = text
+end
+
+-- Initialize UI
+local function Initialize()
+	-- Create main UI
+	local ui = CreateMainUI()
+
+	-- Update team indicator when player's team changes
+	player:GetPropertyChangedSignal("Team"):Connect(function()
+		UpdateTeamIndicator(ui)
+	end)
+
+	-- Initial update
+	UpdateTeamIndicator(ui)
+
+	-- Connect to round events
+	local gameEvents = ReplicatedStorage:WaitForChild("GameEvents")
+
+	-- Handle round start
+	gameEvents.RoundStarted.OnClientEvent:Connect(function(duration)
+		-- Update UI
+		ui.RoundInfo.Status.Text = "Round in Progress"
+		ui.RoundInfo.Timer.Text = "Time: " .. FormatTime(duration)
+
+		-- Hide round end screen if visible
+		if ui.RoundEndScreen.Visible then
+			HideRoundEndScreen(ui)
+		end
+
+		-- Update timer
+		local timer = duration
+		spawn(function()
+			while timer > 0 do
+				wait(1)
+				timer = timer - 1
+				ui.RoundInfo.Timer.Text = "Time: " .. FormatTime(timer)
+			end
+		end)
+	end)
+
+	-- Handle round end
+	gameEvents.RoundEnded.OnClientEvent:Connect(function(survivingPrey)
+		-- Update UI
+		ui.RoundInfo.Status.Text = "Intermission"
+
+		-- Show round end screen
+		ShowRoundEndScreen(ui, survivingPrey)
+
+		-- Update intermission timer
+		local timer = 15
+		spawn(function()
+			while timer > 0 do
+				wait(1)
+				timer = timer - 1
+				ui.RoundEndScreen.NextRoundText.Text = "Next round in " .. timer .. " seconds..."
+			end
+		end)
+	end)
+
+	-- Handle player elimination
+	if gameEvents:FindFirstChild("PlayerEliminated") then
+		gameEvents.PlayerEliminated.OnClientEvent:Connect(function(preyName, predatorName, predatorTeam)
+			ShowEliminationNotification(ui, preyName, predatorName, predatorTeam)
+		end)
+	end
+
+	-- Handle player becoming spectator
+	if gameEvents:FindFirstChild("PlayerBecameSpectator") then
+		gameEvents.PlayerBecameSpectator.OnClientEvent:Connect(function()
+			ShowSpectatorNotification(ui)
+		end)
+	end
+
+	-- Monitor tool cooldowns
+	spawn(function()
+		while true do
+			wait(0.1)
+
+			-- Check if player has a tool
+			local character = player.Character
+			if character then
+				local tool = character:FindFirstChildOfClass("Tool")
+				if tool then
+					-- Check if tool has a cooldown script
+					local script = tool:FindFirstChild("Script")
+					if script and script:GetAttribute("onCooldown") ~= nil then
+						local onCooldown = script:GetAttribute("onCooldown")
+						local cooldownProgress = script:GetAttribute("cooldownProgress") or 0
+
+						UpdateCooldown(ui, cooldownProgress)
+					else
+						-- Default to ready if no cooldown information
+						UpdateCooldown(ui, 1)
+					end
+				else
+					-- No tool equipped
+					UpdateCooldown(ui, 1)
+				end
+			end
+		end
+	end)
+
+	-- Update debug info periodically
+	spawn(function()
+		while wait(1) do
+			UpdateDebugInfo(ui)
+		end
+	end)
+end
+
+-- Run the UI initialization
+Initialize() 
